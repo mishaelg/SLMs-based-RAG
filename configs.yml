@@ -1,0 +1,8 @@
+# Names of the SLMs we want to use
+SLM_MODELS_NAMES: []
+# Names of the LLM we want to test them against
+LLM_MODEL: ""
+# Name of the datasets we want to test them on
+DATASETS_NAMES: []
+# Folder to all the datasets
+DATASETS_FODLER: ""
