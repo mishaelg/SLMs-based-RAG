@@ -1,8 +1,10 @@
 # Names of the SLMs we want to use
-SLM_MODELS_NAMES: []
+slm_models_names: []
 # Names of the LLM we want to test them against
-LLM_MODEL: ""
+llm_model_name: ""
 # Name of the datasets we want to test them on
-DATASETS_NAMES: []
+datasets_names: []
 # Folder to all the datasets
-DATASETS_FODLER: ""
+output_folder: ""
+# Save the vector index of the dataset per model
+save_index: False

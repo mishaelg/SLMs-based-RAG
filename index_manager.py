@@ -2,6 +2,8 @@ import faiss
 import numpy as np
 import pickle
 
+from .settings import INDEX_NAME, INDEX_MAPPER_NAME
+
 
 class SingleIndexManager:
     def __init__(self, embedding_dim):
@@ -87,8 +89,12 @@ class SingleIndexManager:
             self.index_to_doc_id = pickle.load(f)
 
 
-def index_corpus(corpus, model, model_manager):
+def index_corpus(corpus, model, model_manager, index_output=None):
     docs_embeddings = model.encode(
         [doc['title'] + ' ' + doc['text'] for doc in corpus.values()])
     docs_ids = list(corpus.keys())
     model_manager.add_documents(docs_embeddings, docs_ids)
+    if index_output:
+        index_output.mkdir(parents=True, exist_ok=True)
+        model_manager.save_index(
+            index_output / INDEX_NAME, index_output / INDEX_MAPPER_NAME)
