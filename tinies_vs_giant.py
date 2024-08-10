@@ -8,7 +8,7 @@ from .eval import calculate_metrics
 from .index_manager import SingleIndexManager, index_corpus
 from .utils import save_json, load_yaml
 from .configs import Config
-from .settings import (CONFIG_FILE, INDEX_FOLDER, DATASET_FOLDER
+from .settings import (CONFIG_FILE, INDEX_FOLDER, DATASET_FOLDER,
                        QUERIES_RESULTS_FILE)
 from .logger_config import logger
 
@@ -117,7 +117,8 @@ def model_eval(configs, corpus, queries, model_name, qrels):
         None
     """
     logger.info("Calculating results for %s", model_name)
-    model_output_folder = configs.output_folder / model_name
+    model_folder = model_name.split("/", 1)[1]
+    model_output_folder = configs.output_folder / model_folder
     model_output_folder.mkdir(parents=True, exist_ok=True)
     model = SentenceTransformer(model_name)
     model_manager = SingleIndexManager(
