@@ -5,7 +5,7 @@ import logging
 # Configure the logger
 
 
-def setup_logger(log_file='app.log', level=logging.INFO):
+def setup_logger(log_file='tinies_vs_giant.log', level=logging.INFO):
     logger = logging.getLogger('my_logger')
     logger.setLevel(level)
 
