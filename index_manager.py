@@ -90,6 +90,15 @@ class SingleIndexManager:
 
 
 def index_corpus(corpus, model, model_manager, index_output=None):
+    """
+    Indexes the given corpus using the provided model and model manager.
+
+    Args:
+        corpus (dict): A dictionary containing the corpus data.
+        model: The model used for encoding the documents.
+        model_manager: The manager responsible for adding documents to the model.
+        index_output (str, optional): The output directory for saving the index. Defaults to None.
+    """
     docs_embeddings = model.encode(
         [doc['title'] + ' ' + doc['text'] for doc in corpus.values()])
     docs_ids = list(corpus.keys())

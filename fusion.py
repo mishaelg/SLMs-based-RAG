@@ -2,13 +2,20 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from collections import defaultdict
 
+from .utils import load_json, save_json
+from .settings import FUSION_RESULTS_FILE
+from .logger_config import logger
+
 
 def combsum_fusion(ranked_lists):
     """
-    Perform CombSum fusion on multiple ranked lists with efficient score normalization.
+    Combines multiple ranked lists into a fused list using the CombSUM fusion method.
 
-    :param ranked_lists: A list of lists, where each inner list contains tuples of (doc_id, score)
-    :return: A list of tuples (doc_id, fused_score) sorted by fused_score in descending order
+    Args:
+        ranked_lists (list): A list of ranked lists, where each ranked list is a list of (doc_id, score) tuples.
+
+    Returns:
+        list: The fused list of (doc_id, score) tuples, sorted by score in descending order.
     """
     # Create a set of all unique document IDs
     all_doc_ids = set(
@@ -44,19 +51,44 @@ def combsum_fusion(ranked_lists):
 
 def rrf_fusion(ranked_lists, k=60):
     """
-    Perform Reciprocal Rank Fusion on multiple ranked lists.
+    Combines multiple ranked lists into a fused list using the Reciprocal Rank Fusion (RRF) method.
 
-    :param ranked_lists: A list of lists, where each inner list contains tuples of (doc_id, score)
-    :param k: The constant in the RRF formula (default is 60 as per the original paper)
-    :return: A list of tuples (doc_id, fused_score) sorted by fused_score in descending order
+    Args:
+        ranked_lists (list): A list of ranked lists, where each ranked list is a list of (doc_id, score) tuples.
+        k (int): The rank weight parameter (default is 60).
+
+    Returns:
+        list: The fused list of (doc_id, score) tuples, sorted by score in descending order.
     """
     fused_scores = defaultdict(float)
-
     for ranked_list in ranked_lists:
         for rank, (doc_id, _) in enumerate(ranked_list, start=1):
             fused_scores[doc_id] += 1 / (k + rank)
 
     # Sort the fused list by score in descending order
     fused_list = sorted(fused_scores.items(), key=lambda x: x[1], reverse=True)
-
     return fused_list
+
+
+def comb_results(queries_result_folder, output_path, fusion_method):
+    try:
+        fusion_method = FUSION_TO_FUNC_MAPPER[fusion_method]
+    except KeyError:
+        logger.error("Invalid fusion method: %s, Please choose from the following methods: %s", fusion_method,
+                     list(FUSION_TO_FUNC_MAPPER.keys()))
+        return
+    fusion_result = {}
+    queries_results = {json_path.stem: load_json(
+        json_path) for json_path in queries_result_folder.iterdir()}
+    first_signal = list(queries_results.keys())[0]
+    for query_id in queries_results[first_signal]:
+        ranked_lists = [queries_results[signal][query_id]
+                        for signal in queries_results]
+        fusion_result[query_id] = fusion_method(ranked_lists)
+    save_json(fusion_result, output_path / FUSION_RESULTS_FILE)
+
+
+FUSION_TO_FUNC_MAPPER = {
+    "RRF": rrf_fusion,
+    "CombSum": combsum_fusion,
+}
