@@ -4,7 +4,7 @@ slm_models_names: []
 llm_model_name: ""
 # Name of the datasets we want to test them on
 datasets_names: []
-# Folder to all the datasets
+# Output folder for all the results
 output_folder: ""
 # Save the vector index of the dataset per model
 save_index: False

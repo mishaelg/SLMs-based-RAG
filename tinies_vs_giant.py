@@ -8,7 +8,7 @@ from .eval import calculate_metrics
 from .index_manager import SingleIndexManager, index_corpus
 from .utils import save_json, load_yaml
 from .configs import Config
-from .settings import (CONFIG_FILE, INDEX_FOLDER,
+from .settings import (CONFIG_FILE, INDEX_FOLDER, DATASET_FOLDER
                        QUERIES_RESULTS_FILE)
 from .logger_config import logger
 
@@ -25,6 +25,7 @@ def download_dataset(dataset_name, out_dir):
         data_path (str): The path to the downloaded and unzipped dataset.
 
     """
+    datset_path = out_dir / DATASET_FOLDER
     url = "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{}.zip".format(
         dataset_name)
     data_path = util.download_and_unzip(url, out_dir)
@@ -83,7 +84,7 @@ def calculate_dataset_performance(dataset_name, configs):
     dataset_output_folder = configs.output_folder / dataset_name
     dataset_output_folder.mkdir(parents=True, exist_ok=True)
     corpus, queries, qrels = get_dataset(
-        dataset_name, configs.output_folder)
+        dataset_name, dataset_output_folder)
     # first get the results for all slm models
     for model_name in configs.slm_models_names:
         logger.info("Calculating results for %s", model_name)

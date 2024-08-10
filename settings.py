@@ -2,7 +2,7 @@
 # Name of the config file
 CONFIG_FILE = "config.yaml"
 # Name of the folder containing the datasets
-DATASETS_FOLDER = "datasets"
+DATASET_FOLDER = "dataset"
 # Name of the folder containing the results
 RESULTS_FOLDER = "results"
 # Name of the folder containing the indexes,
