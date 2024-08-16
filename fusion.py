@@ -3,7 +3,7 @@ from sklearn.preprocessing import MinMaxScaler
 from collections import defaultdict
 
 from utils import load_json, save_json
-from settings import FUSION_RESULTS_FILE
+from settings import QUERIES_RESULTS_FILE
 from logger_config import logger
 
 
@@ -19,7 +19,7 @@ def combsum_fusion(ranked_lists):
     """
     # Create a set of all unique document IDs
     all_doc_ids = set(
-        doc_id for ranked_list in ranked_lists for doc_id, _ in ranked_list)
+        doc_id for ranked_list in ranked_lists for _, doc_id in ranked_list)
 
     # Create a dictionary to map document IDs to their index in the numpy array
     doc_id_to_index = {doc_id: i for i, doc_id in enumerate(all_doc_ids)}
@@ -29,8 +29,9 @@ def combsum_fusion(ranked_lists):
 
     # Fill the scores array
     for list_idx, ranked_list in enumerate(ranked_lists):
-        for doc_id, score in ranked_list:
-            scores_array[doc_id_to_index[doc_id], list_idx] = score
+        for score, doc_id in ranked_list:
+            # reverse the score, because it's simillary score
+            scores_array[doc_id_to_index[doc_id], list_idx] = 1/ score
 
     # Normalize scores using MinMaxScaler
     scaler = MinMaxScaler()
@@ -45,7 +46,7 @@ def combsum_fusion(ranked_lists):
 
     # Sort the fused list by score in descending order
     fused_list.sort(key=lambda x: x[1], reverse=True)
-
+    fused_list = [[score, doc_id] for doc_id, score in fused_list]
     return fused_list
 
 
@@ -62,11 +63,12 @@ def rrf_fusion(ranked_lists, k=60):
     """
     fused_scores = defaultdict(float)
     for ranked_list in ranked_lists:
-        for rank, (doc_id, _) in enumerate(ranked_list, start=1):
+        for rank, (_, doc_id) in enumerate(ranked_list, start=1):
             fused_scores[doc_id] += 1 / (k + rank)
 
     # Sort the fused list by score in descending order
     fused_list = sorted(fused_scores.items(), key=lambda x: x[1], reverse=True)
+    fused_list = [[score, doc_id] for doc_id, score in fused_list]
     return fused_list
 
 
@@ -83,7 +85,7 @@ def comb_results(queries_results, output_path, fusion_method):
         ranked_lists = [queries_results[signal][query_id]
                         for signal in queries_results]
         fusion_result[query_id] = fusion_method(ranked_lists)
-    save_json(fusion_result, output_path / FUSION_RESULTS_FILE)
+    save_json(fusion_result, output_path / QUERIES_RESULTS_FILE)
 
 
 FUSION_TO_FUNC_MAPPER = {

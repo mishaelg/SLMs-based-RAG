@@ -1,3 +1,4 @@
+import pandas as pd
 from beir import util
 from beir.datasets.data_loader import GenericDataLoader
 from collections import defaultdict
@@ -10,7 +11,7 @@ from index_manager import SingleIndexManager, index_corpus
 from utils import save_json, load_yaml, load_json
 from configs import Config
 from settings import (CONFIG_FILE, INDEX_FOLDER, DATASET_FOLDER,
-                      QUERIES_RESULTS_FILE)
+                      QUERIES_RESULTS_FILE, METRICS_AVERAGE_JSON_FILE, RESULTS_CSV_FILE)
 from logger_config import logger
 
 
@@ -24,6 +25,8 @@ def get_model_basename(model_name):
     Returns:
         str: The base name of the model.
     """
+    if "/" not in model_name:
+        return model_name
     return model_name.split("/", 1)[1]
 
 
@@ -86,7 +89,7 @@ def get_model_query_result_on_dataset(model, queries, model_manager, output_path
 
 def get_all_models_results_on_dataset(configs, output_path):
     """
-    Retrieves the results of all models on a dataset.
+    Retrieves the results of all SLMs models on a dataset.
 
     Args:
         configs (object): The configuration object.
@@ -100,11 +103,8 @@ def get_all_models_results_on_dataset(configs, output_path):
         model_folder = get_model_basename(model_name)
         model_output_folder = output_path / model_folder
         queries_result_path = model_output_folder / QUERIES_RESULTS_FILE
-        results['slms'][model_folder] = load_json(queries_result_path)
-    llm_model_folder = get_model_basename(configs.llm_model_name)
-    llm_model_output_folder = output_path / llm_model_folder
-    queries_result_path = llm_model_output_folder / QUERIES_RESULTS_FILE
-    results['llm'] = load_json(queries_result_path)
+        results[model_folder] = load_json(queries_result_path)
+    return results
 
 
 def calculate_dataset_performance(dataset_name, configs):
@@ -122,23 +122,60 @@ def calculate_dataset_performance(dataset_name, configs):
     dataset_output_folder.mkdir(parents=True, exist_ok=True)
     corpus, queries, qrels = get_dataset(
         dataset_name, dataset_output_folder)
-    # first get the results for all slm models
+    # # first get the results for all slm models
     for model_name in configs.slm_models_names:
         model_eval(configs, corpus, queries, model_name,
                    qrels, dataset_output_folder)
     # then get the results for the llm model
     model_eval(configs, corpus, queries, configs.llm_model_name,
                qrels, dataset_output_folder)
-    # get queries results per each model
+    # # get queries results per each SLM model
     results = get_all_models_results_on_dataset(configs, dataset_output_folder)
     # Create the fusion results
     for fusion_method in configs.fusion_methods:
         logger.info("Fusing the results using %s", fusion_method)
         fusion_output_folder = dataset_output_folder / fusion_method
         fusion_output_folder.mkdir(parents=True, exist_ok=True)
-        comb_results(results['slm'], fusion_method)
-    # aggregate the results
-    # TODO: implement the aggregation of results
+        comb_results(results, fusion_output_folder, fusion_method)
+        calculate_metrics(fusion_output_folder, qrels)
+    aggregate_results(configs, dataset_output_folder)
+
+
+def get_model_avg_results(output_path, model_name):
+    """
+    Retrieve the average results of a model.
+
+    Args:
+        output_path (str): The path to the output directory.
+        model_name (str): The name of the model.
+
+    Returns:
+        dict: The average results of the model.
+    """
+    model_folder = get_model_basename(model_name)
+    model_output_folder = output_path / model_folder
+    queries_result_path = model_output_folder / METRICS_AVERAGE_JSON_FILE
+    return load_json(queries_result_path)
+
+
+def aggregate_results(configs, output_path):
+    """
+    Aggregate the results of different models and fusion methods.
+
+    Args:
+        configs (object): The configurations object containing the model names and fusion methods.
+        output_path (str): The path to save the aggregated results.
+
+    Returns:
+        None
+    """
+    all_models = configs.slm_models_names + \
+        [configs.llm_model_name] + configs.fusion_methods
+    models_name = [get_model_basename(model_name) for model_name in all_models]
+    results = {model_name: get_model_avg_results(
+        output_path, model_name) for model_name in models_name}
+    results_df = pd.DataFrame.from_dict(results, orient="index").round(3)
+    results_df.to_csv(output_path / RESULTS_CSV_FILE)
 
 
 def model_eval(configs, corpus, queries, model_name, qrels, dataset_output_folder):
@@ -177,8 +214,11 @@ def main():
     configs.output_folder = Path(configs.output_folder)
     for dataset_name in configs.datasets_names:
         logger.info("Running the experiment on %s", dataset_name)
-        calculate_dataset_performance(dataset_name, configs)
-        logger.info("Finished the experiment on %s", dataset_name)
+        try:
+            calculate_dataset_performance(dataset_name, configs)
+            logger.info("Finished the experiment on %s", dataset_name)
+        except Exception as e:
+            logger.error("An error occurred while running the experiment on %s: %s", dataset_name, e)
 
 
 if __name__ == "__main__":

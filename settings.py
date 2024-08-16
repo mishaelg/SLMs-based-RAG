@@ -18,5 +18,5 @@ QUERIES_RESULTS_FILE = "queries_results.json"
 METRICS_CSV_FILE = "metrics.csv"
 # Name of metrics average json file
 METRICS_AVERAGE_JSON_FILE = "metrics_average.json"
-# Name of the file containing the fusion results
-FUSION_RESULTS_FILE = "fusion_results.json"
+# CSV file which contains the aggregated results
+RESULTS_CSV_FILE = "all_methods_results.csv"
