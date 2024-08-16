@@ -6,7 +6,7 @@ import logging
 
 
 def setup_logger(log_file='tinies_vs_giant.log', level=logging.INFO):
-    logger = logging.getLogger('my_logger')
+    logger = logging.getLogger('tinies_vs_giant')
     logger.setLevel(level)
 
     # File handler - logs to a file
@@ -19,7 +19,7 @@ def setup_logger(log_file='tinies_vs_giant.log', level=logging.INFO):
 
     # Formatter - specify the format of the logs
     formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        '%(asctime)s - %(levelname)s - %(message)s')
     file_handler.setFormatter(formatter)
     console_handler.setFormatter(formatter)
 

@@ -1,6 +1,6 @@
 
 # Name of the config file
-CONFIG_FILE = "config.yaml"
+CONFIG_FILE = "configs.yml"
 # Name of the folder containing the datasets
 DATASET_FOLDER = "dataset"
 # Name of the folder containing the results
@@ -14,7 +14,9 @@ INDEX_NAME = "index.faiss"
 INDEX_MAPPER_NAME = "index_mapping.pkl"
 # Name of the file containing the queries results
 QUERIES_RESULTS_FILE = "queries_results.json"
-# Name of the metric's results file
-METRICS_FILE = "metrics.json"
+# Name of the metric's csv file
+METRICS_CSV_FILE = "metrics.csv"
+# Name of metrics average json file
+METRICS_AVERAGE_JSON_FILE = "metrics_average.json"
 # Name of the file containing the fusion results
 FUSION_RESULTS_FILE = "fusion_results.json"

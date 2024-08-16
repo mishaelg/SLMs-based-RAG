@@ -2,6 +2,22 @@
 import json
 import yaml
 
+import numpy as np
+
+
+class NumpyJsonEncoder(json.JSONEncoder):
+    """Encode numpy objects to serializable objects"""
+
+    def default(self, obj):
+        """Default encoder"""
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NumpyJsonEncoder, self).default(obj)
+
 
 def save_json(data, output_path):
     """
@@ -15,7 +31,7 @@ def save_json(data, output_path):
     None
     """
     with open(output_path, "w") as f:
-        json.dump(data, f, indent=4)
+        json.dump(data, f, indent=4, cls=NumpyJsonEncoder)
 
 
 def load_json(input_path):

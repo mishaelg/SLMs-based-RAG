@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(slots=True)
@@ -14,4 +14,4 @@ class Config:
     # Save the vector index of the dataset per model
     save_index: bool = False
     # List of methods to use for fusion, can be "RRF" or "CombSum" or both
-    fusion_methods: list = ["RRF", "CombSum"]
+    fusion_methods: list = field(default_factory=lambda: ["RRF", "CombSum"])

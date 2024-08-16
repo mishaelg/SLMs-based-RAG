@@ -1,5 +1,6 @@
-from .utils import save_json, load_json
-from .settings import QUERIES_RESULTS_FILE, METRICS_FILE
+from utils import save_json, load_json
+from settings import QUERIES_RESULTS_FILE, METRICS_CSV_FILE, METRICS_AVERAGE_JSON_FILE
+import pandas as pd
 
 
 def calculate_ir_metrics(result_ids, relevant_ids):
@@ -30,13 +31,13 @@ def calculate_ir_metrics(result_ids, relevant_ids):
     for i, result in enumerate(result_ids, 1):
         if result in relevant_set:
             hits += 1
-        precision = hits / i
-        sum_precisions += precision
+            precision = hits / i
+            sum_precisions += precision
 
         if i == 3:
-            p3 = precision
+            p3 = hits / i
         elif i == 5:
-            p5 = precision
+            p5 = hits / i
 
     ap = sum_precisions / num_relevant
     recall = hits / num_relevant
@@ -86,7 +87,7 @@ def get_queries_results(queries, model_manager, output_path, model):
     save_json(result_dict, output_path)
 
 
-def calculate_metrics(configs, output_path, qrels):
+def calculate_metrics(output_path, qrels):
     """
     Calculate metrics for each model based on the given configurations, output path, and relevance judgments.
 
@@ -100,11 +101,12 @@ def calculate_metrics(configs, output_path, qrels):
     """
     results = load_json(output_path / QUERIES_RESULTS_FILE)
     metrics = {}
-    for model_name in configs.models_names:
-        model_metrics = {}
-        for query_id, result_ids in results.items():
-            relevant_ids = qrels[query_id]
-            model_metrics[query_id] = calculate_ir_metrics(
-                result_ids, relevant_ids)
-        metrics[model_name] = model_metrics
-    save_json(metrics, output_path / METRICS_FILE)
+    for query_id, results in results.items():
+        relevant_ids = list(qrels[query_id].keys())
+        result_ids = [doc_id for _, doc_id in results]
+        metrics[query_id] = calculate_ir_metrics(
+            result_ids, relevant_ids)
+    df = pd.DataFrame(metrics).T
+    df.to_csv(output_path / METRICS_CSV_FILE)
+    average_metrics = df.mean().to_dict()
+    save_json(average_metrics, output_path / METRICS_AVERAGE_JSON_FILE)

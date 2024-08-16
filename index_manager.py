@@ -1,8 +1,10 @@
 import faiss
 import numpy as np
 import pickle
+import time
 
-from .settings import INDEX_NAME, INDEX_MAPPER_NAME
+from settings import INDEX_NAME, INDEX_MAPPER_NAME
+from logger_config import logger
 
 
 class SingleIndexManager:
@@ -99,11 +101,15 @@ def index_corpus(corpus, model, model_manager, index_output=None):
         model_manager: The manager responsible for adding documents to the model.
         index_output (str, optional): The output directory for saving the index. Defaults to None.
     """
+    start_time = time.time()
     docs_embeddings = model.encode(
-        [doc['title'] + ' ' + doc['text'] for doc in corpus.values()])
+        [doc['title'] + ' ' + doc['text'] for doc in corpus.values()], batch_size=32, 
+        show_progress_bar=True)
     docs_ids = list(corpus.keys())
     model_manager.add_documents(docs_embeddings, docs_ids)
     if index_output:
         index_output.mkdir(parents=True, exist_ok=True)
         model_manager.save_index(
             index_output / INDEX_NAME, index_output / INDEX_MAPPER_NAME)
+    end_time = time.time()
+    logger.info("Indexing completed in %.2f seconds.", end_time - start_time)

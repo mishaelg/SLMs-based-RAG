@@ -2,9 +2,9 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from collections import defaultdict
 
-from .utils import load_json, save_json
-from .settings import FUSION_RESULTS_FILE
-from .logger_config import logger
+from utils import load_json, save_json
+from settings import FUSION_RESULTS_FILE
+from logger_config import logger
 
 
 def combsum_fusion(ranked_lists):
@@ -70,7 +70,7 @@ def rrf_fusion(ranked_lists, k=60):
     return fused_list
 
 
-def comb_results(queries_result_folder, output_path, fusion_method):
+def comb_results(queries_results, output_path, fusion_method):
     try:
         fusion_method = FUSION_TO_FUNC_MAPPER[fusion_method]
     except KeyError:
@@ -78,8 +78,6 @@ def comb_results(queries_result_folder, output_path, fusion_method):
                      list(FUSION_TO_FUNC_MAPPER.keys()))
         return
     fusion_result = {}
-    queries_results = {json_path.stem: load_json(
-        json_path) for json_path in queries_result_folder.iterdir()}
     first_signal = list(queries_results.keys())[0]
     for query_id in queries_results[first_signal]:
         ranked_lists = [queries_results[signal][query_id]

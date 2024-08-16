@@ -1,16 +1,30 @@
 from beir import util
 from beir.datasets.data_loader import GenericDataLoader
+from collections import defaultdict
 from sentence_transformers import SentenceTransformer
 from pathlib import Path
 
-from .fusion import comb_results
-from .eval import calculate_metrics
-from .index_manager import SingleIndexManager, index_corpus
-from .utils import save_json, load_yaml
-from .configs import Config
-from .settings import (CONFIG_FILE, INDEX_FOLDER, DATASET_FOLDER,
-                       QUERIES_RESULTS_FILE)
-from .logger_config import logger
+from fusion import comb_results
+from eval import calculate_metrics
+from index_manager import SingleIndexManager, index_corpus
+from utils import save_json, load_yaml, load_json
+from configs import Config
+from settings import (CONFIG_FILE, INDEX_FOLDER, DATASET_FOLDER,
+                      QUERIES_RESULTS_FILE)
+from logger_config import logger
+
+
+def get_model_basename(model_name):
+    """
+    Get the base name of a model from its full name.
+
+    Args:
+        model_name (str): The full name of the model.
+
+    Returns:
+        str: The base name of the model.
+    """
+    return model_name.split("/", 1)[1]
 
 
 def download_dataset(dataset_name, out_dir):
@@ -28,7 +42,7 @@ def download_dataset(dataset_name, out_dir):
     datset_path = out_dir / DATASET_FOLDER
     url = "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{}.zip".format(
         dataset_name)
-    data_path = util.download_and_unzip(url, out_dir)
+    data_path = util.download_and_unzip(url, datset_path)
     return data_path
 
 
@@ -70,6 +84,29 @@ def get_model_query_result_on_dataset(model, queries, model_manager, output_path
     save_json(results, queries_result_path)
 
 
+def get_all_models_results_on_dataset(configs, output_path):
+    """
+    Retrieves the results of all models on a dataset.
+
+    Args:
+        configs (object): The configuration object.
+        output_path (str): The path to save the results.
+
+    Returns:
+        None
+    """
+    results = defaultdict(dict)
+    for model_name in configs.slm_models_names:
+        model_folder = get_model_basename(model_name)
+        model_output_folder = output_path / model_folder
+        queries_result_path = model_output_folder / QUERIES_RESULTS_FILE
+        results['slms'][model_folder] = load_json(queries_result_path)
+    llm_model_folder = get_model_basename(configs.llm_model_name)
+    llm_model_output_folder = output_path / llm_model_folder
+    queries_result_path = llm_model_output_folder / QUERIES_RESULTS_FILE
+    results['llm'] = load_json(queries_result_path)
+
+
 def calculate_dataset_performance(dataset_name, configs):
     """
     Calculate the performance of a dataset on all models.
@@ -87,23 +124,24 @@ def calculate_dataset_performance(dataset_name, configs):
         dataset_name, dataset_output_folder)
     # first get the results for all slm models
     for model_name in configs.slm_models_names:
-        logger.info("Calculating results for %s", model_name)
-        model_eval(configs, corpus, queries, model_name, qrels)
+        model_eval(configs, corpus, queries, model_name,
+                   qrels, dataset_output_folder)
     # then get the results for the llm model
-    logger.info("Calculating results for %s", configs.llm_model_name)
-    model_eval(configs, corpus, queries, configs.llm_model_name, qrels)
+    model_eval(configs, corpus, queries, configs.llm_model_name,
+               qrels, dataset_output_folder)
+    # get queries results per each model
+    results = get_all_models_results_on_dataset(configs, dataset_output_folder)
     # Create the fusion results
     for fusion_method in configs.fusion_methods:
         logger.info("Fusing the results using %s", fusion_method)
         fusion_output_folder = dataset_output_folder / fusion_method
         fusion_output_folder.mkdir(parents=True, exist_ok=True)
-        comb_results(
-            dataset_output_folder, fusion_output_folder, fusion_method)
+        comb_results(results['slm'], fusion_method)
     # aggregate the results
     # TODO: implement the aggregation of results
 
 
-def model_eval(configs, corpus, queries, model_name, qrels):
+def model_eval(configs, corpus, queries, model_name, qrels, dataset_output_folder):
     """
     Evaluates a given model on a corpus and queries.
 
@@ -117,8 +155,8 @@ def model_eval(configs, corpus, queries, model_name, qrels):
         None
     """
     logger.info("Calculating results for %s", model_name)
-    model_folder = model_name.split("/", 1)[1]
-    model_output_folder = configs.output_folder / model_folder
+    model_folder = get_model_basename(model_name)
+    model_output_folder = dataset_output_folder / model_folder
     model_output_folder.mkdir(parents=True, exist_ok=True)
     model = SentenceTransformer(model_name)
     model_manager = SingleIndexManager(
@@ -129,7 +167,7 @@ def model_eval(configs, corpus, queries, model_name, qrels):
     get_model_query_result_on_dataset(
         model, queries, model_manager, model_output_folder)
     # calculate the metrics
-    calculate_metrics(configs, model_output_folder, qrels)
+    calculate_metrics(model_output_folder, qrels)
 
 
 def main():
@@ -137,7 +175,11 @@ def main():
     configs_data = load_yaml(CONFIG_FILE)
     configs = Config(**configs_data)
     configs.output_folder = Path(configs.output_folder)
-    for dataset_name in configs.datasets:
+    for dataset_name in configs.datasets_names:
         logger.info("Running the experiment on %s", dataset_name)
         calculate_dataset_performance(dataset_name, configs)
         logger.info("Finished the experiment on %s", dataset_name)
+
+
+if __name__ == "__main__":
+    main()
