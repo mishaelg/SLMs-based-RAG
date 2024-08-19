@@ -85,10 +85,9 @@ The `configs.yml` file enables configuration of:
 - Explore more sophisticated ensemble techniques.
 - Investigate fine-tuning SLMs for specific tasks.
 - Optimize indexing for larger models.
+- Experiment with hyperparamters for fusion
+- Experiment with different embedding techniques for large texts
 
-## Code
-
-The repository for this project can be found [here on GitHub](https://github.com/mishaelg/SLMs-based-RAG). 
 
 ## References
 
