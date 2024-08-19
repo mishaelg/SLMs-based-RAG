@@ -4,7 +4,7 @@ This repository contains the implementation of a novel approach to Retrieval-Aug
 
 ## Abstract
 
-This study introduces a novel approach to Retrieval-Augmented Generation (RAG) that leverages multiple Small Language Models (SLMs). Our method employs three distinct SLMs for generating embeddings and creating individual vector databases, followed by the application of Reciprocal Rank Fusion (RRF) and CombSUM techniques to aggregate and rank the results. We evaluated our approach using the Scifact corpus, comparing the performance of four embedding models (three SLMs and one LLM) and two ensemble methods across multiple metrics.
+This framework introduces a novel approach to Retrieval-Augmented Generation (RAG) that leverages multiple Small Language Models (SLMs). Our method employs three distinct SLMs for generating embeddings and creating individual vector databases, followed by the application of Reciprocal Rank Fusion (RRF) and CombSUM techniques to aggregate and rank the results. We evaluated our approach using the Scifact corpus, comparing the performance of four embedding models (three SLMs and one LLM) and two ensemble methods across multiple metrics.
 
 ## Introduction
 
@@ -24,16 +24,6 @@ Our project introduces a multi-SLM pipeline utilizing:
 - Reciprocal Rank Fusion (RRF) and CombSUM techniques for result aggregation and ranking.
 - A comprehensive framework for evaluating these techniques.
 
-## Dataset
-
-We use the **Scifact** dataset from the BEIR benchmark available on Hugging Face.
-
-### Models Used
-
-1. `snowflake-arctic-embed-m-v1.5`
-2. `privacy_embedding_rag_10k_base_12_final`
-3. `bert-base-uncased`
-4. `gte-Qwen2-1.5B-instruct` (LLM)
 
 ## Framework
 
@@ -64,7 +54,7 @@ The `configs.yml` file enables configuration of:
 3. **Precision at 5 (P@5)**
 4. **Recall**
 
-### Model Performance
+### Model Performance example
 
 | Model                                      | AP    | P@3   | P@5   | Recall |
 |--------------------------------------------|-------|-------|-------|--------|
